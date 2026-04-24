@@ -1,0 +1,7 @@
+import joblib
+from sklearn.ensemble import RandomForestClassifier
+
+model = RandomForestClassifier(n_estimators=150)
+model.fit(X, y)  # your training data
+
+joblib.dump(model, "model.pkl")
