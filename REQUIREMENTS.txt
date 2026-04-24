@@ -1,0 +1,8 @@
+pandas
+requests
+python-dotenv
+python-telegram-bot
+scikit-learn
+joblib
+websocket-client
+flask
