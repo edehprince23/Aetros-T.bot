@@ -19,7 +19,7 @@ CHAT_ID = os.getenv("8697215636")
 if not TELEGRAM_TOKEN or not CHAT_ID:
     raise ValueError("Missing TELEGRAM_TOKEN or CHAT_ID")
 
-bot = Bot(token=8581977607:AAHqzqwVWOkfXY1nA-zAdLoYCFgyTtthvC0)
+bot = Bot(token=nA-TELEGRAM_TOKEN)
 
 PAIRS = ["BTCUSDT", "ETHUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT"]
 
