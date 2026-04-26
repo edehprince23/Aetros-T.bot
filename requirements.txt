@@ -5,4 +5,5 @@ python-telegram-bot
 scikit-learn
 joblib
 websocket-client
+websockets
 flask
