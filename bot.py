@@ -9,19 +9,26 @@ from utils.data import get_candles
 from utils.indicators import calculate_indicators
 from utils.signals import check_signal
 
-# Load environment variables
+# Load env
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv("8581977607:AAHqzqwVWOkfXY1nA-zAdLoYCFgyTtthvC0")
-CHAT_ID = os.getenv("8697215636")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-# Safety check
+print("DEBUG TOKEN:", TELEGRAM_TOKEN)
+print("DEBUG CHAT:", CHAT_ID)
+
 if not TELEGRAM_TOKEN or not CHAT_ID:
     raise ValueError("Missing TELEGRAM_TOKEN or CHAT_ID")
 
-bot = Bot(token=nA-TELEGRAM_TOKEN)
+bot = Bot(token=TELEGRAM_TOKEN)
 
-PAIRS = ["BTCUSDT", "ETHUSDT", "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT"]
+# 🔥 MULTI-PAIR (UPGRADED)
+PAIRS = [
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT",
+    "XRPUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT",
+    "MATICUSDT", "LTCUSDT"
+]
 
 def send_signal(pair, direction, score):
     message = f"📊 SIGNAL\nPair: {pair}\nDirection: {direction}\nConfidence: {score}%"
@@ -45,16 +52,13 @@ def run():
             print("Error:", e)
             time.sleep(10)
 
-# Flask app (for Railway)
+# Railway server
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return "Bot is running"
 
-def start_bot():
-    run()
-
 if __name__ == "__main__":
-    threading.Thread(target=start_bot).start()
+    threading.Thread(target=run).start()
     app.run(host="0.0.0.0", port=5000)
