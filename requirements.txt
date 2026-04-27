@@ -4,3 +4,4 @@ python-dotenv
 python-telegram-bot
 flask
 websockets
+python-telegram-bot>=20
