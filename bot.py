@@ -5,6 +5,7 @@ import threading
 import requests
 from flask import Flask
 from telegram import Bot
+from telegram.ext import Updater, CommandHandler
 
 from utils.data import get_candles
 from utils.indicators import calculate_indicators
@@ -24,7 +25,16 @@ print("DEBUG ALPHA:", ALPHA_VANTAGE_KEY)
 if not TELEGRAM_TOKEN or not CHAT_ID:
     raise ValueError("Missing TELEGRAM_TOKEN or CHAT_ID")
 
-bot = Bot(token=TELEGRAM_TOKEN)
+# ✅ TELEGRAM SETUP (UPDATED)
+updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
+dispatcher = updater.dispatcher
+bot = updater.bot
+
+# ✅ START COMMAND (NEW)
+def start(update, context):
+    update.message.reply_text("✅ Aetros Bot is ACTIVE and running!")
+
+dispatcher.add_handler(CommandHandler("start", start))
 
 # 🔥 CRYPTO (FAST LOOP)
 CRYPTO_PAIRS = [
@@ -34,7 +44,7 @@ CRYPTO_PAIRS = [
     "FILUSDT", "APTUSDT", "ARBUSDT", "OPUSDT", "SANDUSDT"
 ]
 
-# 💱 FOREX (SLOW LOOP - Alpha Vantage)
+# 💱 FOREX
 FOREX_PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
 # 📊 STOCKS
@@ -45,7 +55,7 @@ def send_signal(market, pair, direction, score):
     bot.send_message(chat_id=CHAT_ID, text=message)
 
 # =========================
-# 🔥 CRYPTO LOOP (FAST)
+# 🔥 CRYPTO LOOP
 # =========================
 def run_crypto():
     while True:
@@ -59,7 +69,7 @@ def run_crypto():
                 if direction and score >= 75:
                     send_signal("CRYPTO", pair, direction, score)
 
-                time.sleep(1)  # prevent rate limit
+                time.sleep(1)
 
             time.sleep(30)
 
@@ -68,7 +78,7 @@ def run_crypto():
             time.sleep(10)
 
 # =========================
-# 💱 FOREX LOOP (SLOW)
+# 💱 FOREX LOOP
 # =========================
 def get_forex_data(pair):
     base = pair[:3]
@@ -80,9 +90,7 @@ def get_forex_data(pair):
     try:
         ts = data["Time Series FX (1min)"]
         latest = list(ts.values())[0]
-        close = float(latest["4. close"])
-
-        return close
+        return float(latest["4. close"])
     except:
         return None
 
@@ -93,19 +101,18 @@ def run_forex():
                 price = get_forex_data(pair)
 
                 if price:
-                    # simple logic (placeholder)
                     if price % 2 > 1:
                         send_signal("FOREX", pair, "BUY", 70)
                     else:
                         send_signal("FOREX", pair, "SELL", 70)
 
-                time.sleep(12)  # respect 5 req/min limit
+                time.sleep(12)
 
         except Exception as e:
             print("Forex Error:", e)
 
 # =========================
-# 📊 STOCK LOOP (SLOW)
+# 📊 STOCK LOOP
 # =========================
 def get_stock_data(symbol):
     url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=1min&apikey={ALPHA_VANTAGE_KEY}"
@@ -114,9 +121,7 @@ def get_stock_data(symbol):
     try:
         ts = data["Time Series (1min)"]
         latest = list(ts.values())[0]
-        close = float(latest["4. close"])
-
-        return close
+        return float(latest["4. close"])
     except:
         return None
 
@@ -150,6 +155,11 @@ def home():
 # 🚀 START EVERYTHING
 # =========================
 if __name__ == "__main__":
+    updater.start_polling()
+
+    # 🔥 CONFIRM BOT STARTED
+    bot.send_message(chat_id=CHAT_ID, text="🚀 Bot successfully started!")
+
     threading.Thread(target=run_crypto).start()
     threading.Thread(target=run_forex).start()
     threading.Thread(target=run_stocks).start()
