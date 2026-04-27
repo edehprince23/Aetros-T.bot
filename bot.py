@@ -4,14 +4,16 @@ import time
 import threading
 import requests
 from flask import Flask
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler
+from telegram import Bot, Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from utils.data import get_candles
 from utils.indicators import calculate_indicators
 from utils.signals import check_signal
 
-# Load env
+# =========================
+# 🔐 LOAD ENV
+# =========================
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -20,39 +22,52 @@ ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
 
 print("DEBUG TOKEN:", TELEGRAM_TOKEN)
 print("DEBUG CHAT:", CHAT_ID)
-print("DEBUG ALPHA:", ALPHA_VANTAGE_KEY)
 
 if not TELEGRAM_TOKEN or not CHAT_ID:
     raise ValueError("Missing TELEGRAM_TOKEN or CHAT_ID")
 
-# ✅ TELEGRAM SETUP (UPDATED)
-updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-bot = updater.bot
+# =========================
+# 🤖 TELEGRAM (V20 FIXED)
+# =========================
+app_bot = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+bot = app_bot.bot
 
-# ✅ START COMMAND (NEW)
-def start(update, context):
-    update.message.reply_text("✅ Aetros Bot is ACTIVE and running!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("✅ Aetros Bot is ACTIVE and running!")
 
-dispatcher.add_handler(CommandHandler("start", start))
+app_bot.add_handler(CommandHandler("start", start))
 
-# 🔥 CRYPTO (FAST LOOP)
+# =========================
+# 🔥 CRYPTO PAIRS (30+ SAFE)
+# =========================
 CRYPTO_PAIRS = [
-    "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
-    "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "MATICUSDT", "LTCUSDT",
-    "LINKUSDT", "DOTUSDT", "TRXUSDT", "ATOMUSDT", "NEARUSDT",
-    "FILUSDT", "APTUSDT", "ARBUSDT", "OPUSDT", "SANDUSDT"
+    "BTCUSDT","ETHUSDT","BNBUSDT","SOLUSDT","XRPUSDT",
+    "ADAUSDT","DOGEUSDT","AVAXUSDT","MATICUSDT","LTCUSDT",
+    "LINKUSDT","DOTUSDT","TRXUSDT","ATOMUSDT","NEARUSDT",
+    "FILUSDT","APTUSDT","ARBUSDT","OPUSDT","SANDUSDT",
+    "AAVEUSDT","GRTUSDT","SNXUSDT","CRVUSDT","DYDXUSDT",
+    "FTMUSDT","ALGOUSDT","VETUSDT","ICPUSDT","FLOWUSDT"
 ]
 
+# =========================
 # 💱 FOREX
+# =========================
 FOREX_PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
 
+# =========================
 # 📊 STOCKS
+# =========================
 STOCKS = ["AAPL", "TSLA", "NVDA"]
 
+# =========================
+# 📩 SEND SIGNAL
+# =========================
 def send_signal(market, pair, direction, score):
-    message = f"📊 {market} SIGNAL\nPair: {pair}\nDirection: {direction}\nConfidence: {score}%"
-    bot.send_message(chat_id=CHAT_ID, text=message)
+    try:
+        message = f"📊 {market} SIGNAL\nPair: {pair}\nDirection: {direction}\nConfidence: {score}%"
+        bot.send_message(chat_id=CHAT_ID, text=message)
+    except Exception as e:
+        print("Telegram Error:", e)
 
 # =========================
 # 🔥 CRYPTO LOOP
@@ -66,7 +81,7 @@ def run_crypto():
 
                 direction, score = check_signal(df)
 
-                if direction and score >= 75:
+                if direction and score >= 70:
                     send_signal("CRYPTO", pair, direction, score)
 
                 time.sleep(1)
@@ -149,15 +164,16 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Bot running (Crypto + Forex + Stocks)"
+    return "Bot running (Stable Version)"
 
 # =========================
-# 🚀 START EVERYTHING
+# 🚀 START
 # =========================
 if __name__ == "__main__":
-    updater.start_polling()
+    threading.Thread(target=app_bot.run_polling).start()
 
-    # 🔥 CONFIRM BOT STARTED
+    # startup confirmation
+    time.sleep(3)
     bot.send_message(chat_id=CHAT_ID, text="🚀 Bot successfully started!")
 
     threading.Thread(target=run_crypto).start()
